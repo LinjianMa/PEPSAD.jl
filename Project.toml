@@ -4,6 +4,7 @@ authors = ["LinjianMa <malinjianev@gmail.com> and contributors"]
 version = "0.1.0"
 
 [deps]
+AutoHOOT = "0bdf4f06-f75d-419a-8d6b-4ad79dc3c0f5"
 ITensors = "9136182c-28ba-11e9-034c-db9fb085ebd5"
 
 [compat]

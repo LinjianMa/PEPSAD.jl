@@ -80,3 +80,39 @@ function randomizePEPS!(P::PEPS)
         end
     end
 end
+
+# Get the tensor network of <peps|peps>
+function inner_network(peps::PEPS)
+    network = []
+    for tensor in vcat(peps.data...)
+        push!(network, tensor)
+        indices = inds(tensor)
+        bonds = [indices[i] for i = 1:length(indices)-1]
+        push!(network, dag(prime(tensor, bonds...)))
+    end
+    return network
+end
+
+# Get the tensor network of <peps|mpo|peps>
+# The local MPO specifies the 2-site term of the Hamiltonian
+function inner_network(peps::PEPS, mpo::MPO, coordinates::Array)
+    @assert(length(mpo) == length(coordinates))
+    network = []
+    for ii = 1:peps.dimx
+        for jj = 1:peps.dimy
+            tensor = peps.data[jj, ii]
+            push!(network, tensor)
+            indices = inds(tensor)
+            if (jj => ii) in coordinates
+                index = findall(x -> x == (jj => ii), coordinates)
+                @assert(length(index) == 1)
+                push!(network, mpo.data[index[1]])
+                push!(network, dag(prime(tensor, indices...)))
+            else
+                bonds = [indices[i] for i = 1:length(indices)-1]
+                push!(network, dag(prime(tensor, bonds...)))
+            end
+        end
+    end
+    return network
+end
