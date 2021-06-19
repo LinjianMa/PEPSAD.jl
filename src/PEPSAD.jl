@@ -1,5 +1,7 @@
 module PEPSAD
 
-# Write your package code here.
+export PEPS, randomizePEPS!
+
+include("peps.jl")
 
 end

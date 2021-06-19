@@ -1,6 +1,8 @@
-using PEPSAD
 using Test
 
 @testset "PEPSAD.jl" begin
-    # Write your tests here.
+    @testset "$filename" for filename in ["peps_test.jl"]
+        println("Running $filename")
+        include(filename)
+    end
 end
