@@ -5,14 +5,14 @@ using AutoHOOT
 const itensorad = AutoHOOT.ITensorsAD
 
 @testset "test peps" begin
-    Nx = 5
+    Nx = 4
     Ny = 5
     sites = siteinds("S=1/2", Nx * Ny)
-    sites = reshape(sites, Nx, Ny)
+    sites = reshape(sites, Ny, Nx)
     peps = PEPS(sites)
 
-    for ii = 1:Nx-1
-        for jj = 1:Ny-1
+    for ii = 1:Ny-1
+        for jj = 1:Nx-1
             inds1 = inds(peps.data[ii, jj])
             inds2 = inds(peps.data[ii, jj+1])
             inds3 = inds(peps.data[ii+1, jj])
@@ -25,7 +25,7 @@ const itensorad = AutoHOOT.ITensorsAD
 end
 
 @testset "test inner product" begin
-    Nx = 3
+    Nx = 2
     Ny = 3
     sites = siteinds("S=1/2", Nx * Ny)
     sites = reshape(sites, Ny, Nx)
@@ -41,7 +41,7 @@ end
 
 @testset "test inner product with hamiltonian" begin
     Nx = 3
-    Ny = 3
+    Ny = 4
     sites = siteinds("S=1/2", Nx * Ny)
     sites = reshape(sites, Ny, Nx)
     peps = PEPS(sites)

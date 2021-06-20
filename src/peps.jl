@@ -19,8 +19,8 @@ Construct an PEPS filled with Empty ITensors of type `ElT` from a collection of 
 Optionally specify the link dimension with the keyword argument `linkdims`, which by default is 1.
 """
 function PEPS(::Type{T}, sites::Matrix{<:Index}; linkdims::Integer = 1) where {T<:Number}
-    Nx, Ny = size(sites)
-    tensor_grid = Matrix{ITensor}(undef, Nx, Ny)
+    Ny, Nx = size(sites)
+    tensor_grid = Matrix{ITensor}(undef, Ny, Nx)
     # we assume the PEPS at least has size (2,2). Can generalize if necessary
     @assert(Nx >= 2 && Ny >= 2)
 
