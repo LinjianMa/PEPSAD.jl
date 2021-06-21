@@ -3,6 +3,12 @@ using ITensors
 # A type that specifies the model. Used for dispatch on functions `mpo` and `localham_term`.
 struct Model{model} end
 
+struct LocalMPO
+    mpo::MPO
+    coord1::Pair{<:Integer,<:Integer}
+    coord2::Pair{<:Integer,<:Integer}
+end
+
 Model(s::AbstractString) = Model{Symbol(s)}()
 
 # For notation:
@@ -43,9 +49,13 @@ function localham_term(::Model"tfim", sites::Matrix{<:Index}, bond; h::Float64)
     if n2 == n1 + 1 && n2 % Ny == 0
         opsum += h, "Z", 2
     end
-    return MPO(opsum, sites_vec[[n1, n2]])
+    mpo = MPO(opsum, sites_vec[[n1, n2]])
+    coord1 = ((n1 - 1) % Ny + 1) => trunc(Int, (n1 - 1) / Ny) + 1
+    coord2 = ((n2 - 1) % Ny + 1) => trunc(Int, (n2 - 1) / Ny) + 1
+    return LocalMPO(mpo, coord1, coord2)
 end
 
+# Return a list of LocalMPO
 function localham(m::Model, sites; kwargs...)
     Ny, Nx = size(sites)
     lattice = square_lattice(Nx, Ny; yperiodic = false)
@@ -62,7 +72,7 @@ function checklocalham(Hlocal, H, sites)
         # This scales exponentially
         Hlocal_full = ITensor()
         for (i, bond) in enumerate(lattice)
-            Hlocalterm_full = prod(Hlocal[i])
+            Hlocalterm_full = prod(Hlocal[i].mpo)
             n1, n2 = bond.s1, bond.s2
             for m = 1:Nx*Ny
                 if !(m in (n1, n2))
