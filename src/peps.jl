@@ -5,12 +5,10 @@ A finite size PEPS type.
 """
 mutable struct PEPS
     data::Matrix{ITensor}
-    dimx::Int
-    dimy::Int
 end
 
 
-PEPS(Nx::Int, Ny::Int) = PEPS(Matrix{ITensor}(undef, Nx, Ny), Nx, Ny)
+PEPS(Nx::Int, Ny::Int) = PEPS(Matrix{ITensor}(undef, Nx, Ny))
 
 
 """
@@ -67,14 +65,15 @@ function PEPS(::Type{T}, sites::Matrix{<:Index}; linkdims::Integer = 1) where {T
         end
     end
 
-    return PEPS(tensor_grid, Nx, Ny)
+    return PEPS(tensor_grid)
 end
 
 PEPS(sites::Matrix{<:Index}, args...; kwargs...) = PEPS(Float64, sites, args...; kwargs...)
 
 function randomizePEPS!(P::PEPS)
-    for ii = 1:P.dimx
-        for jj = 1:P.dimy
+    dimy, dimx = size(P.data)
+    for ii = 1:dimx
+        for jj = 1:dimy
             randn!(P.data[jj, ii])
             normalize!(P.data[jj, ii])
         end
@@ -98,8 +97,9 @@ end
 function inner_network(peps::PEPS, mpo::MPO, coordinates::Array)
     @assert(length(mpo) == length(coordinates))
     network = []
-    for ii = 1:peps.dimx
-        for jj = 1:peps.dimy
+    dimy, dimx = size(peps.data)
+    for ii = 1:dimx
+        for jj = 1:dimy
             tensor = peps.data[jj, ii]
             push!(network, tensor)
             indices = inds(tensor)

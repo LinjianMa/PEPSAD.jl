@@ -79,7 +79,8 @@ An array containing Rayleigh quotient losses after each iteration.
 """
 function gradient_descent(peps::PEPS, Hlocal::Array; stepsize::Float64, num_sweeps::Int)
     inner_nodes, dict = generate_inner_nodes(peps, Hlocal)
-    vec_peps = reshape(peps.data, peps.dimx * peps.dimy)
+    dimy, dimx = size(peps.data)
+    vec_peps = reshape(peps.data, dimx * dimy)
     innodes = [itensorad.retrieve_key(dict, t) for t in vec_peps]
     # build gradients
     gradients_list = []
