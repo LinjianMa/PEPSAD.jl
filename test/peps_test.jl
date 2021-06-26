@@ -31,7 +31,8 @@ end
     sites = reshape(sites, Ny, Nx)
     peps = PEPS(sites)
     randomizePEPS!(peps)
-    inner = inner_network(peps)
+    peps_prime = PEPSAD.prime(peps; ham = false)
+    inner = inner_network(peps, peps_prime)
 
     opt_inner = itensorad.generate_optimal_tree(inner)
     out = contract(opt_inner)
@@ -53,9 +54,30 @@ end
     opsum += "Sz", 1, "Sz", 2
     mpo = MPO(opsum, [sites[2, 2], sites[2, 3]])
 
-    inner = inner_network(peps, mpo, [2 => 2, 2 => 3])
+    peps_prime = PEPSAD.prime(peps; ham = false)
+    peps_prime_ham = PEPSAD.prime(peps; ham = true)
+    inner = inner_network(peps, peps_prime, peps_prime_ham, mpo, [2 => 2, 2 => 3])
     opt_inner = itensorad.generate_optimal_tree(inner)
     out = contract(opt_inner)
     # output is a scalar
     @test size(out) == ()
+end
+
+@testset "test plus, minus, multiplication" begin
+    Nx = 2
+    Ny = 3
+    sites = siteinds("S=1/2", Nx * Ny)
+    sites = reshape(sites, Ny, Nx)
+    peps1 = PEPS(sites)
+    randomizePEPS!(peps1)
+    peps2 = 1.5 * peps1
+    peps3 = peps1 + peps2
+    peps4 = peps1 - peps2
+    for i = 1:Nx
+        for j = 1:Ny
+            @test norm(peps2.data[j, i]) == norm(1.5 * peps1.data[j, i])
+            @test norm(peps3.data[j, i]) == norm(peps1.data[j, i] + peps2.data[j, i])
+            @test norm(peps4.data[j, i]) == norm(peps1.data[j, i] - peps2.data[j, i])
+        end
+    end
 end
