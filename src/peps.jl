@@ -9,9 +9,7 @@ mutable struct PEPS
     data::Matrix{ITensor}
 end
 
-
 PEPS(Nx::Int, Ny::Int) = PEPS(Matrix{ITensor}(undef, Nx, Ny))
-
 
 """
     PEPS([::Type{ElT} = Float64, sites; linkdims=1)
@@ -123,7 +121,13 @@ end
         dpeps_vec = []
         for i = 1:dimy*dimx
             indices = inds(peps_vec[i])
-            push!(dpeps_vec, setinds(dpeps_prime_vec[i], indices))
+            indices_reorder = []
+            for i_prime in inds(dpeps_prime_vec[i])
+                index = findall(x -> x.id == i_prime.id, indices)
+                @assert(length(index) == 1)
+                push!(indices_reorder, indices[index[1]])
+            end
+            push!(dpeps_vec, setinds(dpeps_prime_vec[i], Tuple(indices_reorder)))
         end
         dpeps = PEPS(dpeps_vec, (dimy, dimx))
         return (dpeps, nothing)
@@ -162,7 +166,6 @@ function inner_network(
     end
     return network
 end
-
 
 function extract_data(v::Array{<:PEPS})
     tensor_list = [vcat(peps.data...) for peps in v]
