@@ -3,20 +3,22 @@ using PEPSAD, ITensors, AutoHOOT, Zygote
 const itensorad = AutoHOOT.ITensorsAD
 
 @testset "test monotonic loss decrease of optimization" begin
-    Nx = 2
-    Ny = 3
+    Nx, Ny = 2, 3
+    num_sweeps = 20
     sites = siteinds("S=1/2", Nx * Ny)
     sites = reshape(sites, Ny, Nx)
     peps = PEPS(sites; linkdims = 10)
     randomizePEPS!(peps)
     H_local = localham(Model("tfim"), sites; h = 1.0)
-    losses_gd = gradient_descent(peps, H_local, stepsize = 0.005, num_sweeps = 50)
-    losses_ls = optimize(peps, H_local; num_sweeps = 50, method = "GD")
-    losses_lbfgs = optimize(peps, H_local; num_sweeps = 50, method = "LBFGS")
-    for i = 1:length(losses_gd)-1
+    losses_gd = gradient_descent(peps, H_local, stepsize = 0.005, num_sweeps = num_sweeps)
+    losses_ls = optimize(peps, H_local; num_sweeps = num_sweeps, method = "GD")
+    losses_lbfgs = optimize(peps, H_local; num_sweeps = num_sweeps, method = "LBFGS")
+    losses_cg = optimize(peps, H_local; num_sweeps = num_sweeps, method = "CG")
+    for i = 3:length(losses_gd)-1
         @test losses_gd[i] >= losses_gd[i+1]
         @test losses_ls[i] >= losses_ls[i+1]
         @test losses_lbfgs[i] >= losses_lbfgs[i+1]
+        @test losses_cg[i] >= losses_cg[i+1]
     end
 end
 

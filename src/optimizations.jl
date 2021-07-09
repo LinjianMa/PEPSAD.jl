@@ -94,18 +94,27 @@ function gradient_descent(peps::PEPS, Hlocal::Array; stepsize::Float64, num_swee
 end
 
 function optimize(peps::PEPS, Hlocal::Array; num_sweeps::Int, method = "GD")
-    @assert(method in ["GD", "LBFGS"])
+    @assert(method in ["GD", "LBFGS", "CG"])
     inner(x, peps1, peps2) = peps1 * peps2
     loss_w_grad = loss_grad_wrap(peps, Hlocal)
     scale(peps, alpha) = alpha * peps
     add(peps1, peps2, alpha) = peps1 + alpha * peps2
+    linesearch = HagerZhangLineSearch()
     if method == "GD"
-        alg = GradientDescent(num_sweeps, 1e-8, HagerZhangLineSearch(), 2)
+        alg = GradientDescent(num_sweeps, 1e-8, linesearch, 2)
     elseif method == "LBFGS"
-        alg = LBFGS(;
+        alg = LBFGS(
+            16;
             maxiter = num_sweeps,
             gradtol = 1e-8,
-            linesearch = HagerZhangLineSearch(),
+            linesearch = linesearch,
+            verbosity = 2,
+        )
+    elseif method == "CG"
+        alg = ConjugateGradient(;
+            maxiter = num_sweeps,
+            gradtol = 1e-8,
+            linesearch = linesearch,
             verbosity = 2,
         )
     end
