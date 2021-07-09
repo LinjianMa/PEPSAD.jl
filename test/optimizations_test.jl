@@ -2,7 +2,7 @@ using PEPSAD, ITensors, AutoHOOT, Zygote
 
 const itensorad = AutoHOOT.ITensorsAD
 
-@testset "test monotonic loss decrease of gradient descent" begin
+@testset "test monotonic loss decrease of optimization" begin
     Nx = 2
     Ny = 3
     sites = siteinds("S=1/2", Nx * Ny)
@@ -10,11 +10,13 @@ const itensorad = AutoHOOT.ITensorsAD
     peps = PEPS(sites; linkdims = 10)
     randomizePEPS!(peps)
     H_local = localham(Model("tfim"), sites; h = 1.0)
-    losses = gradient_descent(peps, H_local, stepsize = 0.005, num_sweeps = 50)
-    losses_ls = gd_w_line_search(peps, H_local, num_sweeps = 50)
-    for i = 1:length(losses)-1
-        @test losses[i] >= losses[i+1]
+    losses_gd = gradient_descent(peps, H_local, stepsize = 0.005, num_sweeps = 50)
+    losses_ls = optimize(peps, H_local; num_sweeps = 50, method = "GD")
+    losses_lbfgs = optimize(peps, H_local; num_sweeps = 50, method = "LBFGS")
+    for i = 1:length(losses_gd)-1
+        @test losses_gd[i] >= losses_gd[i+1]
         @test losses_ls[i] >= losses_ls[i+1]
+        @test losses_lbfgs[i] >= losses_lbfgs[i+1]
     end
 end
 

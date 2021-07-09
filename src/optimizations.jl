@@ -93,11 +93,23 @@ function gradient_descent(peps::PEPS, Hlocal::Array; stepsize::Float64, num_swee
     return losses
 end
 
-function gd_w_line_search(peps::PEPS, Hlocal::Array; num_sweeps::Int)
-    alg = GradientDescent(num_sweeps, 1e-8, HagerZhangLineSearch(), 2)
+function optimize(peps::PEPS, Hlocal::Array; num_sweeps::Int, method = "GD")
+    @assert(method in ["GD", "LBFGS"])
     inner(x, peps1, peps2) = peps1 * peps2
     loss_w_grad = loss_grad_wrap(peps, Hlocal)
     scale(peps, alpha) = alpha * peps
-    _, _, _, _, history = optimize(loss_w_grad, peps, alg; inner = inner, scale! = scale)
+    add(peps1, peps2, alpha) = peps1 + alpha * peps2
+    if method == "GD"
+        alg = GradientDescent(num_sweeps, 1e-8, HagerZhangLineSearch(), 2)
+    elseif method == "LBFGS"
+        alg = LBFGS(;
+            maxiter = num_sweeps,
+            gradtol = 1e-8,
+            linesearch = HagerZhangLineSearch(),
+            verbosity = 2,
+        )
+    end
+    _, _, _, _, history =
+        OptimKit.optimize(loss_w_grad, peps, alg; inner = inner, scale! = scale, add! = add)
     return history[:, 1]
 end
