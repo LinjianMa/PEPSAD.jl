@@ -1,4 +1,4 @@
-using ITensors, AutoHOOT, Zygote
+using ITensors, AutoHOOT, Zygote, OptimKit
 using Zygote: @adjoint
 
 const itensorad = AutoHOOT.ITensorsAD
@@ -56,6 +56,19 @@ function rayleigh_quotient(inners::Array)
     return expectations / self_inner
 end
 
+function loss_grad_wrap(peps::PEPS, Hlocal::Array)
+    function loss(peps::PEPS)
+        peps_prime = prime(peps; ham = false)
+        peps_prime_ham = prime(peps; ham = true)
+        network_list = generate_inner_network(peps, peps_prime, peps_prime_ham, Hlocal)
+        variables = extract_data([peps, peps_prime, peps_prime_ham])
+        inners = itensorad.batch_tensor_contraction(network_list, variables...)
+        return rayleigh_quotient(inners)
+    end
+    loss_w_grad(peps::PEPS) = loss(peps), gradient(loss, peps)[1]
+    return loss_w_grad
+end
+
 """Update PEPS based on gradient descent
 Parameters
 ----------
@@ -68,21 +81,23 @@ Returns
 An array containing Rayleigh quotient losses after each iteration.
 """
 function gradient_descent(peps::PEPS, Hlocal::Array; stepsize::Float64, num_sweeps::Int)
-    function loss(peps::PEPS)
-        peps_prime = prime(peps; ham = false)
-        peps_prime_ham = prime(peps; ham = true)
-        network_list = generate_inner_network(peps, peps_prime, peps_prime_ham, Hlocal)
-        variables = extract_data([peps, peps_prime, peps_prime_ham])
-        inners = itensorad.batch_tensor_contraction(network_list, variables...)
-        return rayleigh_quotient(inners)
-    end
+    loss_w_grad = loss_grad_wrap(peps, Hlocal)
     # gradient descent iterations
     losses = []
     for iter = 1:num_sweeps
-        l = loss(peps)
+        l, g = loss_w_grad(peps)
         print("The rayleigh quotient at iteraton $iter is $l\n")
-        peps = peps - stepsize * gradient(loss, peps)[1]
+        peps = peps - stepsize * g
         push!(losses, l)
     end
     return losses
+end
+
+function gd_w_line_search(peps::PEPS, Hlocal::Array; num_sweeps::Int)
+    alg = GradientDescent(num_sweeps, 1e-8, HagerZhangLineSearch(), 2)
+    inner(x, peps1, peps2) = peps1 * peps2
+    loss_w_grad = loss_grad_wrap(peps, Hlocal)
+    scale(peps, alpha) = alpha * peps
+    _, _, _, _, history = optimize(loss_w_grad, peps, alg; inner = inner, scale! = scale)
+    return history[:, 1]
 end

@@ -11,8 +11,10 @@ const itensorad = AutoHOOT.ITensorsAD
     randomizePEPS!(peps)
     H_local = localham(Model("tfim"), sites; h = 1.0)
     losses = gradient_descent(peps, H_local, stepsize = 0.005, num_sweeps = 50)
+    losses_ls = gd_w_line_search(peps, H_local, num_sweeps = 50)
     for i = 1:length(losses)-1
         @test losses[i] >= losses[i+1]
+        @test losses_ls[i] >= losses_ls[i+1]
     end
 end
 

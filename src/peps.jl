@@ -99,6 +99,15 @@ function Base.:*(c::Number, A::PEPS)
     return PEPS(out, size(A.data))
 end
 
+function Base.:*(A::PEPS, B::PEPS)
+    @assert(size(A.data) == size(B.data))
+    out_scalar = 0
+    for (t1, t2) in zip(vcat(A.data...), vcat(B.data...))
+        out_scalar += ITensors.scalar(t1 * t2)
+    end
+    return out_scalar
+end
+
 function prime(peps::PEPS; ham = true)
     prime_peps = []
     for tensor in vcat(peps.data...)
